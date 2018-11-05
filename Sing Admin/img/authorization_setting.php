@@ -1,0 +1,207 @@
+<?php 
+include("include/config.php");
+if(!isset($_SESSION['admin_id'])) { header("location:login.php"); exit; }
+
+$error=array();
+$tot_rec="0";
+$api_key=array();
+$secret_key=array();
+$auto_id=array();
+
+
+if(isset($_POST['save_btn']) && ($_POST['save_btn']=="Save" || $_POST['save_btn']=="Update"))
+{
+    $api_key=($_POST['api_key']);
+    $secret_key=($_POST['secret_key']);
+    $auto_id=($_POST['auto_id']);
+    
+    $err="1";
+    foreach($_POST['api_key'] as $key => $val) {
+        if($val!="" && $_POST['secret_key'][$key]!="") { $err="0"; }
+    }
+    
+    if($err=="1") { $error[]="Please Provide al least one social authorization API Key and Secret Key."; }
+    
+    if(count($error)<=0)
+    {
+        if($_POST['save_btn']=="Save")
+        {
+            foreach($_POST['api_key'] as $key => $val)
+            {
+                if($val!="" && $_POST['secret_key'][$key]!="")
+                {
+                    $insert="insert into cs_client_social_key set 
+                            client_id='".$_SESSION['admin_id']."',
+                            social_id='".$key."',
+                            api_key='".$val."',
+                            secret_key='".$_POST['secret_key'][$key]."'";
+                    re_db_query($insert);
+                }
+            }
+        }
+        else if($_POST['save_btn']=="Update")
+        {
+            foreach($_POST['api_key'] as $key => $val)
+            {
+                if($val!="" && $_POST['secret_key'][$key]!="" && $_POST['auto_id'][$key]!="")
+                {
+                    $update="update cs_client_social_key set 
+                            api_key='".$val."', 
+                            secret_key='".$_POST['secret_key'][$key]."' 
+                            where social_id='".$key."' and client_id='".$_SESSION['admin_id']."' and id='".$_POST['auto_id'][$key]."'";
+                    re_db_query($update);
+                }
+                else if($val!="" && $_POST['secret_key'][$key]!="" && $_POST['auto_id'][$key]=="")
+                {
+                    $insert="insert into cs_client_social_key set 
+                            client_id='".$_SESSION['admin_id']."',
+                            social_id='".$key."',
+                            api_key='".$val."',
+                            secret_key='".$_POST['secret_key'][$key]."'";
+                    re_db_query($insert);
+                }
+                else if($val=="" && $_POST['secret_key'][$key]=="" && $_POST['auto_id'][$key]!="")
+                {
+                    re_db_query("delete from cs_client_social_key where social_id='".$key."' and client_id='".$_SESSION['admin_id']."' and id='".$_POST['auto_id'][$key]."'");
+                }
+            }
+        }
+        
+        $_SESSION['msg']="insert";
+        header("location:authorization_setting.php"); exit;
+    }
+}
+
+
+if(!isset($_POST['save_btn']) && isset($_SESSION['admin_id']))
+{
+    $social_key_qry="select * from cs_client_social_key where client_id='".$_SESSION['admin_id']."'";
+    $social_key_sql=re_db_query($social_key_qry);
+    
+    if(re_db_num_rows($social_key_sql)>0)
+    {
+        $tot_rec=re_db_num_rows($social_key_sql);
+        while($social_key_rec=re_db_fetch_array($social_key_sql))
+        {
+            $auto_id[$social_key_rec['social_id']]=$social_key_rec['id'];
+            $api_key[$social_key_rec['social_id']]=$social_key_rec['api_key'];
+            $secret_key[$social_key_rec['social_id']]=$social_key_rec['secret_key'];
+        }
+    }
+}
+
+$social_sql=re_db_query("select * from cs_social_network_master where is_display='1'");
+
+
+if(isset($_SESSION['msg']) && $_SESSION['msg']=="insert")
+{ 
+    $msg="Change Saved Successfully.";
+    unset($_SESSION['msg']); 
+}
+
+
+include("header.php");
+?>
+<div class="content-wrap">
+    <!-- main page content. the place to put widgets in. usually consists of .row > .col-md-* > .widget.  -->
+    <main id="content" class="content" role="main">
+        <ol class="breadcrumb">
+            <li>YOU ARE HERE</li>
+            <li class="active">Authorization Settings</li>
+        </ol>
+        <!--h1 class="page-title">Site - <span class="fw-semi-bold">Settings</span></h1-->
+        <div class="row">
+            <div class="col-md-7">
+                <section class="widget">
+                    <header>
+                        <h4>Authorization <small>Setting</small></h4>
+                        <div class="widget-controls">
+                            <a data-widgster="expand" title="Expand" href="#"><i class="glyphicon glyphicon-chevron-up"></i></a>
+                            <a data-widgster="collapse" title="Collapse" href="#"><i class="glyphicon glyphicon-chevron-down"></i></a>
+                            <a data-widgster="close" title="Close" href="#"><i class="glyphicon glyphicon-remove"></i></a>
+                        </div>
+                    </header>
+                    <div class="widget-body">
+                        <form class="login-form mt-lg" action="" method="post" enctype="multipart/form-data">
+                            <table class="table">
+                                <tr><td style="border: medium none; font-size: 13px;">For getting social authorization API ID and Secret Key.</td></tr>
+                                <?php if(count($error)>0)
+                                {
+                                    ?><tr><td><?php echo display_error_msg($error);?></td></tr><?php
+                                } if(isset($msg) && $msg!="") {?>
+                                    <tr><td><span style="color: #008000;" ><?php echo $msg; ?></span></td></tr>
+                                <?php }?>
+                                <?php if(re_db_num_rows($social_sql)>0)
+                                {
+                                    while($social_rec=re_db_fetch_array($social_sql))
+                                    {
+                                        $img_name="";
+                                        $img_name=str_replace(array(" ","-"),"_",strtolower($social_rec['social_name']));
+                                        ?>
+                                        <tr><th><img src="<?php echo SITE_URL."img/social_icon/40x40/40x40_".$img_name.".png";?>" alt="" title="<?php echo $social_rec['social_name'];?>" />&nbsp;<?php echo $social_rec['social_name'];?> Authorization</th></tr>
+                                        <tr>
+                                            <td style="border: medium none;">
+                                                <div class="form-group">
+                                                    <div><strong>API Key: </strong></div>
+                                                    <input type="text" class="form-control" name="api_key[<?php echo $social_rec['social_id'];?>]" id="api_key_<?php echo $social_rec['social_id'];?>" placeholder="<?php echo $social_rec['social_name'];?> API Key" value="<?php echo isset($api_key[$social_rec['social_id']]) ? $api_key[$social_rec['social_id']] : "";?>" />
+                                                </div>
+                                                <div class="form-group">
+                                                    <div><strong>Secret Key: </strong></div>
+                                                    <input type="text" class="form-control" name="secret_key[<?php echo $social_rec['social_id'];?>]" id="secret_key_<?php echo $social_rec['social_id'];?>" placeholder="<?php echo $social_rec['social_name'];?> Secret Key" value="<?php echo isset($secret_key[$social_rec['social_id']]) ? $secret_key[$social_rec['social_id']] : "";?>" />
+                                                </div>
+                                                <input type="hidden" name="auto_id[<?php echo $social_rec['social_id'];?>]" id="auto_id" value="<?php echo isset($auto_id[$social_rec['social_id']]) ? $auto_id[$social_rec['social_id']] : "";?>" />
+                                            </td>
+                                        </tr>
+                                        <?php 
+                                    }
+                                }?>
+                                <tr>
+                                    <td>
+                                        <div class="clearfix">
+                                            <div class="btn-toolbar pull-right">
+                                                <?php if($tot_rec>0) { ?>
+                                                    <input type="submit" name="save_btn" class="btn btn-inverse btn-sm" value="Update" />
+                                                <?php } else { ?>
+                                                    <input type="submit" name="save_btn" class="btn btn-inverse btn-sm" value="Save" />
+                                                <?php } ?>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+                        </form>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+</div>
+<!-- The Loader. Is shown when pjax happens -->
+<div class="loader-wrap hiding hide">
+    <i class="fa fa-circle-o-notch fa-spin-fast"></i>
+</div>
+
+<!-- common libraries. required for every page-->
+<script src="vendor/jquery/dist/jquery.min.js"></script>
+<script src="vendor/jquery-pjax/jquery.pjax.js"></script>
+<script src="vendor/bootstrap-sass/vendor/assets/javascripts/bootstrap/transition.js"></script>
+<script src="vendor/bootstrap-sass/vendor/assets/javascripts/bootstrap/collapse.js"></script>
+<script src="vendor/bootstrap-sass/vendor/assets/javascripts/bootstrap/dropdown.js"></script>
+<script src="vendor/bootstrap-sass/vendor/assets/javascripts/bootstrap/button.js"></script>
+<script src="vendor/bootstrap-sass/vendor/assets/javascripts/bootstrap/tooltip.js"></script>
+<script src="vendor/bootstrap-sass/vendor/assets/javascripts/bootstrap/alert.js"></script>
+<script src="vendor/jQuery-slimScroll/jquery.slimscroll.min.js"></script>
+<script src="vendor/widgster/widgster.js"></script>
+<script src="vendor/pace.js/pace.min.js"></script>
+<script src="vendor/jquery-touchswipe/jquery.touchSwipe.js"></script>
+
+<!-- common app js -->
+<script src="js/settings.js"></script>
+<script src="js/app.js"></script>
+
+<!-- page specific libs -->
+<script src="vendor/parsleyjs/dist/parsley.min.js"></script>
+<!-- page specific js -->
+<script src="js/form-validation.js"></script>
+</body>
+</html>

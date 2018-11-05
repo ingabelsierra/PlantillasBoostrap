@@ -1,0 +1,43 @@
+{
+  "name": "admin4b",
+  "title": "Admin 4B",
+  "version": "1.2.2",
+  "homepage": "http://getadmin4b.com",
+  "author": "Marx JMoura",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/marxjmoura/admin4b/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/marxjmoura/admin4b.git"
+  },
+  "scripts": {
+    "start": "gulp start",
+    "build-js": "gulp build-js",
+    "build-html": "gulp build-html",
+    "build-sass": "gulp build-sass",
+    "build": "gulp build"
+  },
+  "dependencies": {
+    "bootstrap": "^4.1.1",
+    "jquery": "^3.3.1",
+    "popper.js": "^1.14.3"
+  },
+  "devDependencies": {
+    "babel-core": "^6.26.3",
+    "babel-preset-env": "^1.7.0",
+    "babelify": "^8.0.0",
+    "browserify": "^16.2.2",
+    "gulp": "^4.0.0",
+    "gulp-autoprefixer": "^5.0.0",
+    "gulp-file-include": "^2.0.1",
+    "gulp-html-extend": "^1.1.6",
+    "gulp-htmlmin": "^4.0.0",
+    "gulp-rename": "^1.3.0",
+    "gulp-sass": "^3.2.1",
+    "gulp-uglify": "^3.0.0",
+    "vinyl-buffer": "^1.0.1",
+    "vinyl-source-stream": "^2.0.0"
+  }
+}
